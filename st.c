@@ -3079,15 +3079,14 @@ redraw(void)
 	draw();
 }
 
-void followlinks(const Arg *) {
-  if (fork() == 0) {
+void followlinks(const Arg *arg) {
     char *screen_buf = malloc(term.row * (term.col + 1) * UTF_SIZ);
 
     for (int i = 0; i < term.row; ++i) {
-      tgetline(screen_buf + i * (term.col + 1), &term.line[i][0]);
+        tgetline(screen_buf + i * (term.col + 1), &term.line[i][0]);
     }
 
-    char *text = "https://google.com\nhttps://yandex.ru";
+    // char *text = "https://google.com\nhttps://yandex.ru";
     char *format_string = "echo '%s'";
     size_t size = snprintf(NULL, 0, format_string, screen_buf);
     char *addresses_str = malloc(size + 1);
@@ -3095,11 +3094,12 @@ void followlinks(const Arg *) {
 
     char *command = "sh";
     char *argument_list[] = {"sh", "-c", addresses_str, NULL};
-    // char* argument_list[] = {"sh", "-c", "echo 'https://google.com' | dmenu
-    // -p 'Which link to follow?' | xargs xdg-open", NULL};
-    execvp(command, argument_list);
+    // char* argument_list[] = {"sh", "-c", "echo 'https://google.com' | dmenu -p 'Which link to follow?' | xargs xdg-open", NULL};
+
+    if (fork() == 0) {
+        execvp(command, argument_list);
+    }
 
     free(addresses_str);
     free(screen_buf);
-  }
 }
