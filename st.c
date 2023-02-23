@@ -3080,21 +3080,26 @@ redraw(void)
 }
 
 void followlinks(const Arg *arg) {
-    char *screen_buf = malloc(term.row * (term.col + 1) * UTF_SIZ);
+    char *screen_buf = malloc(term.row * term.col * UTF_SIZ);
 
     for (int i = 0; i < term.row; ++i) {
-        tgetline(screen_buf + i * (term.col + 1), &term.line[i][0]);
+        tgetglyphs(screen_buf + i * term.col, &term.line[i][0], &term.line[i][term.col]);
     }
 
-    // char *text = "https://google.com\nhttps://yandex.ru";
-    char *format_string = "echo '%s'";
+    // Remove all unwanted symbols
+    for (int i = 0; i < term.row * term.col; ++i) {
+        if (screen_buf[i] == '"' || screen_buf[i] == '\'' || screen_buf[i] == '\r') {
+            screen_buf[i] = ' ';
+        }
+    }
+
+    char *format_string = "echo '%s' | grep -Eo https\\?://\\[^\\ \\\"\\'\\]\\* | sort -u | dmenu -p 'Which link to follow?' | xargs xdg-open";
     size_t size = snprintf(NULL, 0, format_string, screen_buf);
     char *addresses_str = malloc(size + 1);
     sprintf(addresses_str, format_string, screen_buf);
 
     char *command = "sh";
     char *argument_list[] = {"sh", "-c", addresses_str, NULL};
-    // char* argument_list[] = {"sh", "-c", "echo 'https://google.com' | dmenu -p 'Which link to follow?' | xargs xdg-open", NULL};
 
     if (fork() == 0) {
         execvp(command, argument_list);
